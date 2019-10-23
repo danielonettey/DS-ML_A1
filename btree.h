@@ -44,7 +44,7 @@ typedef struct node{
 
 //Make the fanout global variable
 int fanout = DEFAULT_FANOUT;
-node * root = null;
+node * root = NULL;
 
 //Create a record to refer to the leaf nodes and contains the data
 typedef struct record {
@@ -55,14 +55,14 @@ typedef struct record {
 
 //functions
 node * find_leaf(node * nodepointer, int key);
-record * find(node * root,int key);
-void range(node * root, int start_key, int end_key);
+record * find(int key);
+void range(int start_key, int end_key);
 node * make_node(bool c);
 record * make_record(int value);
 node * split_node(node * root, node * old_node, int left_index, int key, node * right);
 node * split_leaf(node * root, node * leaf, int key, record * pointer);
 node * insert_in_parent(node * root, node * left, int key, node * right);
-node * insert(node * n, int key, int value);
+node * insert(int key, int value);
 node * insert_in_leaf(node * tmpNode, int key, int value);
 
 
@@ -99,7 +99,7 @@ node * find_leaf(node * nodepointer, int key){
     }
 }
 
-record * find(node * root, int key){
+record * find(int key){
     node * leaf = find_leaf(root, key);
     if (leaf == NULL){
         return NULL;
@@ -130,7 +130,6 @@ record * make_record(int value) {
 	return new_record;
 }
 
-
 //Make a node function
 node * make_node(bool c) {
     node * newNode;
@@ -145,6 +144,7 @@ node * make_node(bool c) {
     return newNode;
 }
 
+//Split the node 
 node * split_node(node * root, node * old_node, int left_index, int key, node * right){
     int i, j, split, k_prime;
     int * temp_keys;
@@ -209,8 +209,6 @@ node * split_node(node * root, node * old_node, int left_index, int key, node * 
 		child = new_node->pointers[i];
 		child->parent = new_node;
 	}
-
-
 
 	return insert_in_parent(root, old_node,k_prime, new_node);
 
@@ -289,6 +287,7 @@ node * split_leaf(node * root, node * leaf, int key, record * pointer){
     return insert_in_parent(root, leaf, new_key, new_leaf);
 }
 
+
 //Function to insert keys into the parent node
 node * insert_in_parent(node * root, node * left, int key, node * right){
     int left_index;
@@ -340,13 +339,13 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 }
 
 //Main insert function
-node * insert(node * n, int key, int value){
+node * insert(int key, int value){
     node * tempNode;
 
     //Check to see if the key to be inserted already exist
     //and override the value with the new value
     record * rp = NULL;
-    rp = find(root, key);
+    rp = find(key);
     if(rp == NULL){
         rp->value = value;
         return root;
@@ -366,7 +365,7 @@ node * insert(node * n, int key, int value){
         tempNode = find_leaf(root, key);
 
         if(tempNode->numKeys < fanout){
-            tempNode = insert_in_leaf(tempNode,key,rp);
+            tempNode = insert_in_leaf(tempNode,key,value);
 
             return root;
         }
@@ -401,7 +400,7 @@ node * insert_in_leaf(node * tmpNode, int key, int value){
                 key = tmpNode->keys[i + 1];
             }
         }
-        tmpNode->numKeys;
+        tmpNode->numKeys++;
     }
     return tmpNode;
 }
@@ -429,19 +428,22 @@ Can you describe a generic cost expression for Scan, measured in number of rando
 */
 
 // TODO GRADUATE: here you will need to define RANGE for finding qualifying keys and values that fall in a key range.
-void range(node * root, int start_key, int end_key){
+void range(int start_key, int end_key){
+    int * arraykey;
+    record ** arrayVal;
+
     //check to see if the range is valid
     if (start_key > end_key){
-        return NULL;
+        return;
     }
 
     //find the leaf which the start key can be found in
     node * leaf = find_leaf(root, start_key);
 
     //create arrays to hash the keys to their corresponding values
-    node * arraykey[end_key - start_key];
-    record * arrayVal[end_key - start_key];
-
+    arraykey = malloc(fanout * sizeof(int));
+    arrayVal = malloc(fanout * sizeof(record *));
+    
     //If the key does not exist, find the next key from the node that exits
     while(leaf == NULL){
         start_key = start_key + 1;
@@ -461,7 +463,7 @@ void range(node * root, int start_key, int end_key){
                 arraykey[j] = start_key;
                 arrayVal[j] = (record *)leaf->pointers[i];
                 j++;
-            }
+            }   
         }
         //Else check to see if
         else{

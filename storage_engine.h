@@ -21,8 +21,6 @@ typedef struct storageContext {
     // TODO: you hold a pointer here to find your B+Tree
 } STORAGECXT_t;
 
-node * root = NULL;
-
 /*
  * The following are wrapper functions which are entry points into your storage engine.
  * 
@@ -51,8 +49,7 @@ int wrapperGet(STORAGECXT_t **storageEngine, KEY_t targetKey){
 
     (void) storageEngine;
     (void) targetKey;
-    (void) foundVal;
-    find(root,targetKey);
+    find(targetKey);
     return 0;
 }
 
@@ -79,7 +76,7 @@ int wrapperPut(STORAGECXT_t **storageEngine, KEY_t key, VAL_t val){
     (void) storageEngine;
     (void) key;
     (void) val;
-    
+    insert(key,val);
     return 0;
 }
 
