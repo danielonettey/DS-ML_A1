@@ -45,16 +45,17 @@ int parseRouteQuery(char queryLine[], STORAGECXT_t *store){
     if ( sscanf(queryLine, PUT_PATTERN, &key, &val) >= 1) {  
         // route a point query
         // TODO: hook this into your storage engine's put. b+tree's insert.
-        
+         wrapperPut(NULL, key,val);
         printf(PUT_PATTERN, key, val); // Stubbed print for now
     }else if( sscanf(queryLine, GET_PATTERN, &key) >= 1 ) {
         // route a get query
         // TODO: hook this into your storage engine's get. b+tree's find.
-        printf(GET_PATTERN, key); // Stubbed print for now
+        wrapperGet(NULL, key);
+//        printf(GET_PATTERN, key); // Stubbed print for now
     }else if( sscanf(queryLine, RANGE_PATTERN, &lowKey, &highKey) >= 1 ) {
         // route a range query
         // NOTE: implement this for graduate credit 
-        printf(RANGE_PATTERN, lowKey, highKey); // Stubbed print for now
+//        printf(RANGE_PATTERN, lowKey, highKey); // Stubbed print for now
     }else {
         // query not parsed. handle the query as unknown
         return -1;

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define DEFAULT_FANOUT 4
-#define MIN_fanout 3
+#define MIN_fanout 1
 #define MAX_fanout 20
 /* 
 Designing your C Structs for B+Tree nodes (Chapter 10.3.1)
@@ -126,7 +126,7 @@ For Splitting B+Tree Nodes (Chapter 10.8.3)
 //Make record function
 record * make_record(int value) {
 	record * new_record = (record *)malloc(sizeof(record));
-		new_record->value = value;
+	new_record->value = value;
 	return new_record;
 }
 
@@ -170,11 +170,11 @@ node * split_node(node * root, node * old_node, int left_index, int key, node * 
 	temp_keys[left_index] = key;
 
 	 //create new node and fill them 50% full each
-	if((fanout - 1) % 2 == 0){
-        split = (fanout - 1) / 2;
+	if(fanout % 2 == 0){
+        split = fanout / 2;
 	}
 	else{
-        split = (fanout - 1) / 2 + 1;
+        split = fanout / 2 + 1;
 	}
 
 	//create two nodes that will be 50% filled with the initially
@@ -269,9 +269,10 @@ node * split_leaf(node * root, node * leaf, int key, record * pointer){
 
     //Free memory
     free(temp_keys);
-    free(temp_pointers);
 
-    //set all indices in the node that have not been occupied to null
+	free(temp_pointers);
+
+//    //set all indices in the node that have not been occupied to null
     new_leaf->pointers[fanout - 1] = leaf->pointers[fanout - 1];
 	leaf->pointers[fanout - 1] = new_leaf;
 
@@ -297,16 +298,24 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 
 	//insert a new root for two sub trees
 	if (parent == NULL){
-        node * root1 = make_node(false);
-        root1->keys[0] = key;
-        root1->pointers[0] = left;
-        root1->pointers[1] = right;
-        root1->numKeys++;
-        root1->parent = NULL;
-        left->parent = root1;
-        right->parent = root1;
+        node * root = make_node(false);
+        root->keys[0] = key;
+        root->pointers[0] = left;
+        root->pointers[1] = right;
+        root->numKeys++;
+        root->parent = NULL;
+        left->parent = root;
+        right->parent = root;
+
+        //make the new root the root if root is part of subtrees
+//        if(left == root || right == root){
+//            root = root;
+//            return root;
+//        }
         return root;
 	}
+
+
 
     //find the parent's pointer to the left
     int l_index = 0;
@@ -323,7 +332,7 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 
         for(i = parent->numKeys; i > left_index; i--){
             parent->pointers[i + 1] = parent->pointers[i];
-            parent->keys[i] = parent->keys[i + 1];
+            parent->keys[i] = parent->keys[i - 1];
         }
 
         //Insertion of the key and pointer in the right position so it remains sorted
@@ -340,20 +349,24 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 
 //Main insert function
 node * insert(int key, int value){
-    node * tempNode;
+    node * tempNode = NULL;
 
     //Check to see if the key to be inserted already exist
     //and override the value with the new value
     record * rp = NULL;
     rp = find(key);
-    if(rp == NULL){
+    if(rp != NULL){
         rp->value = value;
         return root;
-    } 	
+    }
+
+
+    rp = make_record(value);
 
     //Check to see if there is already a root, if not make
     //key a root and start the tree
-    if (n == NULL){
+
+    if (root == NULL){
         root = make_node(true);
         root->keys[0] = key;
         root->pointers[0] = make_record(value);
@@ -361,12 +374,14 @@ node * insert(int key, int value){
         root->numKeys++;
         return root;
     }
+
+
+
     else{
         tempNode = find_leaf(root, key);
 
-        if(tempNode->numKeys < fanout){
+        if(tempNode->numKeys < fanout - 1){
             tempNode = insert_in_leaf(tempNode,key,value);
-
             return root;
         }
 
@@ -480,6 +495,8 @@ void range(int start_key, int end_key){
         }
         leaf = leaf->nxtNode;
     }
+    free(arraykey);
+    free(arrayVal);
 }
 
 

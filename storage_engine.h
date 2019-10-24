@@ -49,7 +49,6 @@ int wrapperGet(STORAGECXT_t **storageEngine, KEY_t targetKey){
 
     (void) storageEngine;
     (void) targetKey;
-    find(targetKey);
     return 0;
 }
 
