@@ -131,6 +131,7 @@ record * make_record(int value) {
 node * make_node(bool c) {
     node * newNode;
     newNode = malloc(sizeof(node));
+
     //Allocated memory to the pointers
     newNode->keys = malloc((fanout - 1) * sizeof(int));
     newNode->pointers = malloc(fanout * sizeof(void *));
@@ -201,7 +202,6 @@ node * split_node(node * old_node, int left_index, int key, node * right){
 	free(temp_pointers);
 	free(temp_keys);
 
-	//
 	for (i = 0; i <= new_node->numKeys; i++) {
 		child = new_node->pointers[i];
 		child->parent = new_node;
@@ -304,11 +304,6 @@ node * insert_in_parent(node * left, int key, node * right){
         left->parent = root1;
         right->parent = root1;
 
-//        //make the new root the root if root is part of subtrees
-//        if(left == root1 || right == root1){
-//            root = root1;
-//            return root1;
-//        }
         return root1;
 	}
 
@@ -362,7 +357,6 @@ node * insert(int key, int value){
 
     //Check to see if there is already a root, if not make
     //key a root and start the tree
-
     if (root == NULL){
         root = make_node(true);
         root->keys[0] = key;
