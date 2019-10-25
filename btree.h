@@ -20,9 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define DEFAULT_FANOUT 4
-#define MIN_fanout 1
-#define MAX_fanout 20
+#define DEFAULT_FANOUT 300
 /* 
 Designing your C Structs for B+Tree nodes (Chapter 10.3.1)
 How will you represent a B+Tree as a C Struct (or series of C structs that work together)? There are many valid ways to do this part of your design, and we leave it open to you to try and tune this as you progress through the project.
@@ -54,14 +52,13 @@ typedef struct record {
 
 
 //functions
-node * find_leaf(node * nodepointer, int key);
+node * find_leaf(node * node1, int key);
 record * find(int key);
-void range(int start_key, int end_key);
 node * make_node(bool c);
 record * make_record(int value);
-node * split_node(node * root, node * old_node, int left_index, int key, node * right);
-node * split_leaf(node * root, node * leaf, int key, record * pointer);
-node * insert_in_parent(node * root, node * left, int key, node * right);
+node * split_node(node * old_node, int left_index, int key, node * right);
+node * split_leaf(node * leaf, int key, record * pointer);
+node * insert_in_parent(node * left, int key, node * right);
 node * insert(int key, int value);
 node * insert_in_leaf(node * tmpNode, int key, int value);
 
@@ -79,24 +76,24 @@ How many nodes need to be accessed during an equality search for a key, within t
 // TODO: here you will need to define FIND/SEARCH related method(s) of finding key-values in your B+Tree.
 
 //Create a find leaf function and returns the leaf that contains the given key  
-node * find_leaf(node * nodepointer, int key){
+node * find_leaf(node * root, int key){
+    if (root == NULL) {
+        return root;
+    }
+
     int i = 0;
-
-    if(nodepointer == NULL){
-        return nodepointer;
-    }
-
-    if(nodepointer->isLeaf){
-        return nodepointer;
-    }
-    else{
-        for(i = 0; i < nodepointer->numKeys; i++){
-            if(key < nodepointer->keys[i]){
-                return find_leaf(nodepointer->pointers[i], key);
+    node * c = root;
+    while (!c->isLeaf) {
+        i = 0;
+        while (i < c->numKeys) {
+            if (key >= c->keys[i]) i++;
+            else{
+                break;
             }
         }
-        return find_leaf(nodepointer->pointers[nodepointer->numKeys + 1], key);
+        c = (node *)c->pointers[i];
     }
+    return c;
 }
 
 record * find(int key){
@@ -145,8 +142,8 @@ node * make_node(bool c) {
 }
 
 //Split the node 
-node * split_node(node * root, node * old_node, int left_index, int key, node * right){
-    int i, j, split, k_prime;
+node * split_node(node * old_node, int left_index, int key, node * right){
+    int i, j, split, kp;
     int * temp_keys;
     node * new_node, * child;
     node **temp_pointers;
@@ -189,7 +186,7 @@ node * split_node(node * root, node * old_node, int left_index, int key, node * 
 		old_node->numKeys++;
 	}
 	old_node->pointers[i] = temp_pointers[i];
-	k_prime = temp_keys[split - 1];
+	kp = temp_keys[split - 1];
 
 	//Copy second set into second node
 	for (++i, j = 0; i < fanout; i++, j++) {
@@ -210,11 +207,11 @@ node * split_node(node * root, node * old_node, int left_index, int key, node * 
 		child->parent = new_node;
 	}
 
-	return insert_in_parent(root, old_node,k_prime, new_node);
+	return insert_in_parent(old_node,kp, new_node);
 
 }
 
-node * split_leaf(node * root, node * leaf, int key, record * pointer){
+node * split_leaf(node * leaf, int key, record * pointer){
     node * new_leaf;
 	int * temp_keys;
 	void ** temp_pointers;
@@ -285,12 +282,12 @@ node * split_leaf(node * root, node * leaf, int key, record * pointer){
     new_leaf->parent = leaf->parent;
 	new_key = new_leaf->keys[0];
 	//Insert into the parent of the two leaves
-    return insert_in_parent(root, leaf, new_key, new_leaf);
+    return insert_in_parent(leaf, new_key, new_leaf);
 }
 
 
 //Function to insert keys into the parent node
-node * insert_in_parent(node * root, node * left, int key, node * right){
+node * insert_in_parent(node * left, int key, node * right){
     int left_index;
 	node * parent;
 
@@ -298,21 +295,21 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 
 	//insert a new root for two sub trees
 	if (parent == NULL){
-        node * root = make_node(false);
-        root->keys[0] = key;
-        root->pointers[0] = left;
-        root->pointers[1] = right;
-        root->numKeys++;
-        root->parent = NULL;
-        left->parent = root;
-        right->parent = root;
+        node * root1 = make_node(false);
+        root1->keys[0] = key;
+        root1->pointers[0] = left;
+        root1->pointers[1] = right;
+        root1->numKeys++;
+        root1->parent = NULL;
+        left->parent = root1;
+        right->parent = root1;
 
-        //make the new root the root if root is part of subtrees
-//        if(left == root || right == root){
-//            root = root;
-//            return root;
+//        //make the new root the root if root is part of subtrees
+//        if(left == root1 || right == root1){
+//            root = root1;
+//            return root1;
 //        }
-        return root;
+        return root1;
 	}
 
 
@@ -343,7 +340,7 @@ node * insert_in_parent(node * root, node * left, int key, node * right){
 	}
 
 	//Insert when the node is full so the split and insert function is called
-	return split_node(root, parent, left_index, key, right);
+	return split_node(parent, left_index, key, right);
 
 }
 
@@ -375,8 +372,6 @@ node * insert(int key, int value){
         return root;
     }
 
-
-
     else{
         tempNode = find_leaf(root, key);
 
@@ -385,7 +380,7 @@ node * insert(int key, int value){
             return root;
         }
 
-        return split_leaf(root, tempNode, key,rp);
+        return split_leaf(tempNode, key,rp);
     }
 }
 
@@ -404,19 +399,6 @@ node * insert_in_leaf(node * tmpNode, int key, int value){
     tmpNode->keys[j] = key;
     tmpNode->pointers[j] = make_record(value);
     tmpNode->numKeys++;
-    return tmpNode;
-
-    //Check if there is space in the leaf
-    if (tmpNode->numKeys < fanout - 1){
-        for (i = 0; i < tmpNode->numKeys; i++){
-            if(key < tmpNode->keys[i]){
-                tmpNode->keys[i] = key;
-                tmpNode->keys[i + 1] = tmpNode->keys[i];
-                key = tmpNode->keys[i + 1];
-            }
-        }
-        tmpNode->numKeys++;
-    }
     return tmpNode;
 }
 
@@ -443,61 +425,5 @@ Can you describe a generic cost expression for Scan, measured in number of rando
 */
 
 // TODO GRADUATE: here you will need to define RANGE for finding qualifying keys and values that fall in a key range.
-void range(int start_key, int end_key){
-    int * arraykey;
-    record ** arrayVal;
-
-    //check to see if the range is valid
-    if (start_key > end_key){
-        return;
-    }
-
-    //find the leaf which the start key can be found in
-    node * leaf = find_leaf(root, start_key);
-
-    //create arrays to hash the keys to their corresponding values
-    arraykey = malloc(fanout * sizeof(int));
-    arrayVal = malloc(fanout * sizeof(record *));
-    
-    //If the key does not exist, find the next key from the node that exits
-    while(leaf == NULL){
-        start_key = start_key + 1;
-        leaf = find_leaf(root, start_key);
-    }
-
-    int i = 0, j =0;
-
-    //while the leaf node has a next node, then check all the keys in the node to
-    //see if it matches the any of the keys in the range.
-
-    while(leaf->nxtNode != NULL){
-        //check if the keys in the node are less than or equal to the end key
-        //and then return all the keys.
-        if (leaf->keys[leaf->numKeys - 1] <= end_key){
-            for(i = 0; i < leaf->numKeys; i++){
-                arraykey[j] = start_key;
-                arrayVal[j] = (record *)leaf->pointers[i];
-                j++;
-            }   
-        }
-        //Else check to see if
-        else{
-            for(i = 0; i < leaf->numKeys; i++){
-                if(leaf->keys[i] <= end_key){
-                    arraykey[j] = start_key;
-                    arrayVal[j] = (record *)leaf->pointers[i];
-                    j++;
-                }
-                else{
-                    break;
-                }
-            }
-        }
-        leaf = leaf->nxtNode;
-    }
-    free(arraykey);
-    free(arrayVal);
-}
-
 
 #endif

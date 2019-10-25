@@ -21,6 +21,12 @@ typedef struct storageContext {
     // TODO: you hold a pointer here to find your B+Tree
 } STORAGECXT_t;
 
+
+//Global variables for report
+int put = 0;
+int success_get = 0;
+int failed_get = 0;
+
 /*
  * The following are wrapper functions which are entry points into your storage engine.
  * 
@@ -49,6 +55,15 @@ int wrapperGet(STORAGECXT_t **storageEngine, KEY_t targetKey){
 
     (void) storageEngine;
     (void) targetKey;
+
+    //The find algorithm will return null if not found and that will be a failed get
+
+    if (find(targetKey) == NULL){
+        failed_get++;
+    }
+    else{
+        success_get++;
+    }
     return 0;
 }
 
@@ -75,7 +90,11 @@ int wrapperPut(STORAGECXT_t **storageEngine, KEY_t key, VAL_t val){
     (void) storageEngine;
     (void) key;
     (void) val;
-    insert(key,val);
+    //Call the insert function
+    root=insert(key,val);
+    //Count the number of puts in the function.... since there is no failed insert, the put counts anytime there is an
+    //insert
+    put++;
     return 0;
 }
 

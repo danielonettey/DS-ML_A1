@@ -46,7 +46,7 @@ int parseRouteQuery(char queryLine[], STORAGECXT_t *store){
         // route a point query
         // TODO: hook this into your storage engine's put. b+tree's insert.
          wrapperPut(NULL, key,val);
-        printf(PUT_PATTERN, key, val); // Stubbed print for now
+//        printf(PUT_PATTERN, key, val); // Stubbed print for now
     }else if( sscanf(queryLine, GET_PATTERN, &key) >= 1 ) {
         // route a get query
         // TODO: hook this into your storage engine's get. b+tree's find.
@@ -111,6 +111,10 @@ int main(int argc, char *argv[])
 	} 
 
     (void) queriesSourcedFromFile;
-	
+
+    printf("PUTS: %d\n", put);
+    printf("SUCCESSFUL GETS: %d\n", success_get);
+    printf("FAILED GETS: %d\n", failed_get);
+
 	return 0; 
 } 
